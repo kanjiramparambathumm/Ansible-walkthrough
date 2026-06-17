@@ -15,11 +15,11 @@
 Windows 10/11
 └── WSL2 Ubuntu
     ├── Ansible control node
-  ├── Docker CLI (connected to Docker Desktop)
+    ├── Docker CLI (connected to Docker Desktop)
     ├── Inventory and playbooks
     └── Managed nodes (containers)
-        ├── node1
-        └── node2
+        ├── node1 via 127.0.0.1:2221
+        └── node2 via 127.0.0.1:2222
 ```
 ### Roles in the lab
 
@@ -164,25 +164,20 @@ services:
     build: .
     container_name: node1
     hostname: node1
-    networks:
-      ansible_net:
-        ipv4_address: 172.20.0.11
+    ports:
+      - "2221:22"
 
   node2:
     build: .
     container_name: node2
     hostname: node2
-    networks:
-      ansible_net:
-        ipv4_address: 172.20.0.12
-
-networks:
-  ansible_net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
+    ports:
+      - "2222:22"
 ```
+
+> **Why port mapping?**
+>
+> With Docker Desktop + WSL2 integration, container bridge IPs are not always routable from the WSL distro. Publishing SSH ports on `127.0.0.1` is the most reliable workshop default.
 
 ### 5.4 Start lab containers
 
@@ -194,6 +189,8 @@ Verify:
 
 ```bash
 docker ps
+ssh -o StrictHostKeyChecking=no ansible@127.0.0.1 -p 2221
+ssh -o StrictHostKeyChecking=no ansible@127.0.0.1 -p 2222
 ```
 
 ---
@@ -204,8 +201,8 @@ docker ps
 
 ```ini
 [nodegroup]
-node1 ansible_host=172.20.0.11 ansible_user=ansible ansible_password=ansible ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-node2 ansible_host=172.20.0.12 ansible_user=ansible ansible_password=ansible ansible_port=22 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+node1 ansible_host=127.0.0.1 ansible_user=ansible ansible_password=ansible ansible_port=2221 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+node2 ansible_host=127.0.0.1 ansible_user=ansible ansible_password=ansible ansible_port=2222 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
@@ -260,7 +257,7 @@ ansible-inventory -i inventory.ini --graph
 | Problem | What it usually means | Fix |
 |---|---|---|
 | `No hosts matched` | Wrong inventory group | Verify group name and inventory path |
-| `UNREACHABLE!` | SSH or container networking issue | Confirm containers are up and reachable on the configured IPs |
+| `UNREACHABLE!` with `No route to host` | Trying to use non-routable container bridge IPs | Use `127.0.0.1` with mapped SSH ports (`2221`, `2222`) in inventory |
 | `Permission denied` | Wrong SSH credentials | Confirm `ansible_user` and `ansible_password` |
 | `python not found` | Python missing in container | Rebuild image and confirm Python install in Dockerfile |
 | `docker: command not found` | Docker CLI not available in distro shell | Ensure Docker Desktop WSL integration is enabled for your Ubuntu distro |
@@ -284,6 +281,7 @@ ansible all -m ping -i inventory.ini -vvv
 - Ansible is installed in WSL
 - `docker compose up -d` brings up `node1` and `node2`
 - `docker ps` shows both containers as running
+- Inventory uses `127.0.0.1` with `ansible_port=2221` and `ansible_port=2222`
 - `ansible all -m ping -i inventory.ini` returns `pong` from both nodes
 
 When all checks pass, the instructor can start Module 1 immediately.
