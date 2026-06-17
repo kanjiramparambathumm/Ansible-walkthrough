@@ -38,6 +38,12 @@ Windows 10/11
 - Ansible
 - OpenSSH
 
+### Lab authentication model
+
+- SSH login to the containers is password-based using the `ansible` user
+- `sudo` inside the containers is passwordless for workshop convenience
+- This lab choice keeps Ansible `become: true` examples simple without introducing extra prompt-handling steps
+
 ---
 
 ## 2. Install WSL2 and Ubuntu
@@ -147,12 +153,16 @@ RUN apt-get update && \
     useradd -m -s /bin/bash ansible && \
     echo 'ansible:ansible' | chpasswd && \
     usermod -aG sudo ansible && \
+  echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible && \
+  chmod 440 /etc/sudoers.d/ansible && \
     sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config
 
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
 ```
+
+This lab image enables passwordless sudo for the `ansible` user so playbooks using `become: true` work without prompting for a sudo password. SSH login is still password-based.
 
 ### 5.3 Create Docker Compose file
 
@@ -208,6 +218,8 @@ node2 ansible_host=127.0.0.1 ansible_user=ansible ansible_password=ansible ansib
 ansible_python_interpreter=/usr/bin/python3
 ```
 
+The `ansible_password` values above are used for SSH login. They are not the same as sudo prompts, because the lab containers are configured for passwordless sudo.
+
 ### 6.2 Create `ansible.cfg`
 
 ```ini
@@ -224,6 +236,8 @@ become = True
 become_method = sudo
 become_ask_pass = False
 ```
+
+This configuration assumes the container image grants the `ansible` user passwordless sudo. SSH access remains password-based through the inventory credentials above.
 
 ---
 
