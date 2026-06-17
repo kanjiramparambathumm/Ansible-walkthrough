@@ -21,15 +21,6 @@ Windows 10/11
         ├── node1
         └── node2
 ```
-
-### Key changes from previous VM lab
-
-- VirtualBox removed
-- Vagrant removed
-- Entire lab runs inside WSL2
-- Docker containers act as managed nodes
-- SSH connectivity is between the Ansible control node and containers
-
 ### Roles in the lab
 
 | Component | Role | Where it runs | What it does |
