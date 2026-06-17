@@ -136,9 +136,22 @@ ansible-playbook --version
 ### 5.1 Create project structure
 
 ```bash
-mkdir -p ~/ansible-workshop-docker/{playbooks,templates,group_vars,host_vars}
+mkdir -p ~/ansible-workshop-docker/{playbooks,templates,group_vars,host_vars,ssh-keys/node1,ssh-keys/node2}
 cd ~/ansible-workshop-docker
 ```
+
+Generate persistent SSH host keys one time so rebuilt containers keep the same host identity:
+
+```bash
+ssh-keygen -t ed25519 -f ~/ansible-workshop-docker/ssh-keys/node1/ssh_host_ed25519_key -N ""
+ssh-keygen -t rsa -b 4096 -f ~/ansible-workshop-docker/ssh-keys/node1/ssh_host_rsa_key -N ""
+ssh-keygen -t ed25519 -f ~/ansible-workshop-docker/ssh-keys/node2/ssh_host_ed25519_key -N ""
+ssh-keygen -t rsa -b 4096 -f ~/ansible-workshop-docker/ssh-keys/node2/ssh_host_rsa_key -N ""
+chmod 600 ~/ansible-workshop-docker/ssh-keys/node1/ssh_host_*_key
+chmod 600 ~/ansible-workshop-docker/ssh-keys/node2/ssh_host_*_key
+```
+
+These keys stay on the WSL filesystem and are mounted into the containers so SSH host fingerprints remain stable across rebuilds.
 
 ### 5.2 Create Dockerfile for SSH-enabled nodes
 
@@ -176,6 +189,11 @@ services:
     hostname: node1
     ports:
       - "2221:22"
+    volumes:
+      - ./ssh-keys/node1/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key:ro
+      - ./ssh-keys/node1/ssh_host_ed25519_key.pub:/etc/ssh/ssh_host_ed25519_key.pub:ro
+      - ./ssh-keys/node1/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key:ro
+      - ./ssh-keys/node1/ssh_host_rsa_key.pub:/etc/ssh/ssh_host_rsa_key.pub:ro
 
   node2:
     build: .
@@ -183,11 +201,20 @@ services:
     hostname: node2
     ports:
       - "2222:22"
+    volumes:
+      - ./ssh-keys/node2/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key:ro
+      - ./ssh-keys/node2/ssh_host_ed25519_key.pub:/etc/ssh/ssh_host_ed25519_key.pub:ro
+      - ./ssh-keys/node2/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key:ro
+      - ./ssh-keys/node2/ssh_host_rsa_key.pub:/etc/ssh/ssh_host_rsa_key.pub:ro
 ```
 
 > **Why port mapping?**
 >
 > With Docker Desktop + WSL2 integration, container bridge IPs are not always routable from the WSL distro. Publishing SSH ports on `127.0.0.1` is the most reliable workshop default.
+
+> **Why persistent host keys?**
+>
+> Rebuilt containers normally generate new SSH host keys, which causes `REMOTE HOST IDENTIFICATION HAS CHANGED` warnings for the same mapped port. Mounting stable keys prevents that churn.
 
 ### 5.4 Start lab containers
 
@@ -201,6 +228,13 @@ Verify:
 docker ps
 ssh -o StrictHostKeyChecking=no ansible@127.0.0.1 -p 2221
 ssh -o StrictHostKeyChecking=no ansible@127.0.0.1 -p 2222
+```
+
+If you are switching from an older ephemeral-key setup, clear the old entries once before reconnecting:
+
+```bash
+ssh-keygen -f ~/.ssh/known_hosts -R '[127.0.0.1]:2221'
+ssh-keygen -f ~/.ssh/known_hosts -R '[127.0.0.1]:2222'
 ```
 
 ---
@@ -272,6 +306,7 @@ ansible-inventory -i inventory.ini --graph
 |---|---|---|
 | `No hosts matched` | Wrong inventory group | Verify group name and inventory path |
 | `UNREACHABLE!` with `No route to host` | Trying to use non-routable container bridge IPs | Use `127.0.0.1` with mapped SSH ports (`2221`, `2222`) in inventory |
+| `REMOTE HOST IDENTIFICATION HAS CHANGED` | Old SSH host keys are cached for rebuilt containers | Remove the old entries with `ssh-keygen -f ~/.ssh/known_hosts -R '[127.0.0.1]:2221'` and `ssh-keygen -f ~/.ssh/known_hosts -R '[127.0.0.1]:2222'` |
 | `Permission denied` | Wrong SSH credentials | Confirm `ansible_user` and `ansible_password` |
 | `python not found` | Python missing in container | Rebuild image and confirm Python install in Dockerfile |
 | `docker: command not found` | Docker CLI not available in distro shell | Ensure Docker Desktop WSL integration is enabled for your Ubuntu distro |
