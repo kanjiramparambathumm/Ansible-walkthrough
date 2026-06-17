@@ -1,7 +1,7 @@
 # Introduction to Ansible Workshop - Document 1: Pre-requisite Setup Guide (Docker-Based Lab)
 
 **Audience:** Linux/DevOps engineers, system administrators, workshop participants  
-**Purpose:** Build a fully local Ansible lab on a Windows laptop using WSL2, Docker, and two Ubuntu container managed nodes.
+**Purpose:** Build a fully local Ansible lab on a Windows laptop using WSL2, Docker Desktop (WSL integration), and two Ubuntu container managed nodes.
 
 > **Scope note**
 >
@@ -15,7 +15,7 @@
 Windows 10/11
 └── WSL2 Ubuntu
     ├── Ansible control node
-    ├── Docker Engine
+  ├── Docker CLI (connected to Docker Desktop)
     ├── Inventory and playbooks
     └── Managed nodes (containers)
         ├── node1
@@ -37,13 +37,13 @@ Windows 10/11
 | Control node | Ansible controller | WSL2 Ubuntu | Stores inventory, playbooks, roles, and runs Ansible commands |
 | Managed node 1 | Target Linux server | Docker container | Receives Ansible tasks over SSH |
 | Managed node 2 | Target Linux server | Docker container | Receives Ansible tasks over SSH |
-| Container runtime | Lab infrastructure | WSL2 Ubuntu | Builds and runs container nodes |
+| Container runtime | Lab infrastructure | Docker Desktop on Windows (via WSL2 integration) | Builds and runs container nodes |
 
 ### Required software
 
 - WSL2
 - Ubuntu 24.04 or 22.04
-- Docker Engine
+- Docker Desktop (WSL2 backend enabled)
 - Ansible
 - OpenSSH
 
@@ -87,41 +87,25 @@ Use Ubuntu 24.04 or 22.04 for this workshop.
 
 ---
 
-## 3. Install Docker Engine inside WSL Ubuntu
+## 3. Install Docker Desktop on Windows and integrate with WSL2
 
-Update package metadata:
+Install Docker Desktop on Windows (recommended best practice):
 
-```bash
-sudo apt update
-sudo apt -y upgrade
-```
+- Download and install Docker Desktop for Windows
+- In Docker Desktop settings, enable the WSL2 backend
+- Under **Resources > WSL Integration**, enable integration for your Ubuntu distro
 
-Install Docker:
-
-```bash
-sudo apt install -y docker.io docker-compose-v2
-```
-
-Enable and start Docker:
-
-```bash
-sudo systemctl enable --now docker
-```
-
-Allow your user to run Docker without sudo:
-
-```bash
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-Validate Docker:
+Then verify Docker from inside WSL Ubuntu:
 
 ```bash
 docker --version
 docker compose version
 docker ps
 ```
+
+> **Best practice note**
+>
+> Use a single Docker daemon model. For this workshop, use Docker Desktop with WSL2 integration and avoid running a second standalone Docker daemon inside WSL.
 
 ---
 
@@ -288,7 +272,8 @@ ansible-inventory -i inventory.ini --graph
 | `UNREACHABLE!` | SSH or container networking issue | Confirm containers are up and reachable on the configured IPs |
 | `Permission denied` | Wrong SSH credentials | Confirm `ansible_user` and `ansible_password` |
 | `python not found` | Python missing in container | Rebuild image and confirm Python install in Dockerfile |
-| `docker: permission denied` | User not in docker group | Run `sudo usermod -aG docker $USER` and relogin/newgrp |
+| `docker: command not found` | Docker CLI not available in distro shell | Ensure Docker Desktop WSL integration is enabled for your Ubuntu distro |
+| Docker connection errors | Docker Desktop not running or WSL integration disabled | Start Docker Desktop and re-check WSL integration settings |
 
 Useful commands:
 
@@ -304,7 +289,7 @@ ansible all -m ping -i inventory.ini -vvv
 ## 9. Final lab state checklist
 
 - WSL2 is enabled and Ubuntu 24.04/22.04 is installed
-- Docker Engine is installed and running in WSL
+- Docker Desktop is installed on Windows with WSL2 backend and Ubuntu integration enabled
 - Ansible is installed in WSL
 - `docker compose up -d` brings up `node1` and `node2`
 - `docker ps` shows both containers as running
