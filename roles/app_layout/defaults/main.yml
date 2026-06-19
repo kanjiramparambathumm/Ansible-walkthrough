@@ -1,0 +1,4 @@
+---
+app_root: /opt/offline-app
+app_owner: appsvc
+app_env: lab

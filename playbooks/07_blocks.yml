@@ -1,0 +1,32 @@
+---
+- name: Blocks and error handling
+  hosts: all
+  become: true
+  tasks:
+    - name: Risky operations block
+      block:
+        - name: Ensure working directory exists
+          ansible.builtin.file:
+            path: /tmp/block-demo
+            state: directory
+
+        - name: Intentionally fail for demo on node2
+          ansible.builtin.command: /bin/false
+          when: inventory_hostname == 'node2'
+
+        - name: Create success file
+          ansible.builtin.copy:
+            dest: /tmp/block-demo/success.txt
+            content: "Block completed"
+
+      rescue:
+        - name: Rescue path writes marker
+          ansible.builtin.copy:
+            dest: /tmp/block-demo/rescue.txt
+            content: "Rescue executed on {{ inventory_hostname }}"
+
+      always:
+        - name: Always write completion marker
+          ansible.builtin.copy:
+            dest: /tmp/block-demo/always.txt
+            content: "Always ran on {{ inventory_hostname }}"

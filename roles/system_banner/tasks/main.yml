@@ -1,0 +1,7 @@
+---
+- name: Render banner
+  ansible.builtin.template:
+    src: banner.j2
+    dest: "{{ banner_target }}"
+    mode: '0644'
+  notify: record banner change

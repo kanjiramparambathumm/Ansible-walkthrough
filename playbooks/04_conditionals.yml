@@ -1,0 +1,25 @@
+---
+- name: Conditionals demo
+  hosts: all
+  become: true
+  tasks:
+    - name: Show distro info on Ubuntu only
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} is Ubuntu {{ ansible_distribution_version }}"
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Create node1-only marker
+      ansible.builtin.copy:
+        dest: /tmp/node1-only.txt
+        content: "This file exists only on node1"
+      when: inventory_hostname == 'node1'
+
+    - name: Create node2-only marker
+      ansible.builtin.copy:
+        dest: /tmp/node2-only.txt
+        content: "This file exists only on node2"
+      when: inventory_hostname == 'node2'
+
+    - name: Show memory class
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} is {{ 'high-mem' if ansible_memtotal_mb > 512 else 'low-mem' }}"

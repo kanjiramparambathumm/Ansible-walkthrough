@@ -1,0 +1,3 @@
+---
+banner_target: /etc/motd
+banner_title: "Ansible Training Node"

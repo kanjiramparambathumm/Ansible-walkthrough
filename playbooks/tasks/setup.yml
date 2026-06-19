@@ -1,0 +1,10 @@
+---
+- name: Create include demo directory
+  ansible.builtin.file:
+    path: /tmp/include-demo
+    state: directory
+
+- name: Write setup marker
+  ansible.builtin.copy:
+    dest: /tmp/include-demo/setup.txt
+    content: "setup complete"

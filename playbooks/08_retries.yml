@@ -1,0 +1,27 @@
+---
+- name: Retry demo
+  hosts: all
+  tasks:
+    - name: Wait until marker file exists
+      ansible.builtin.shell: test -f /tmp/retry-marker && echo ready || echo waiting
+      register: retry_check
+      retries: 5
+      delay: 2
+      until: "'ready' in retry_check.stdout"
+      ignore_errors: true
+
+    - name: Create marker file
+      ansible.builtin.file:
+        path: /tmp/retry-marker
+        state: touch
+
+    - name: Re-check marker with retries
+      ansible.builtin.shell: test -f /tmp/retry-marker && echo ready || echo waiting
+      register: retry_check_after
+      retries: 3
+      delay: 1
+      until: "'ready' in retry_check_after.stdout"
+
+    - name: Show retry result
+      ansible.builtin.debug:
+        var: retry_check_after.stdout

@@ -1,0 +1,8 @@
+---
+- name: Apply role demo
+  hosts: all
+  become: true
+  roles:
+    - role: system_banner
+      vars:
+        banner_title: "Offline Ansible Lab"

@@ -1,0 +1,8 @@
+---
+- name: Offline final challenge
+  hosts: all
+  become: true
+  roles:
+    - role: app_layout
+      vars:
+        app_env: training

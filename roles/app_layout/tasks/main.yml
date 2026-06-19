@@ -1,0 +1,41 @@
+---
+- name: Ensure app user exists
+  ansible.builtin.user:
+    name: "{{ app_owner }}"
+    shell: /bin/bash
+    state: present
+
+- name: Prepare app layout
+  block:
+    - name: Create app root
+      ansible.builtin.file:
+        path: "{{ app_root }}"
+        state: directory
+        owner: "{{ app_owner }}"
+        group: "{{ app_owner }}"
+        mode: '0755'
+
+    - name: Create subdirectories
+      ansible.builtin.file:
+        path: "{{ app_root }}/{{ item }}"
+        state: directory
+        owner: "{{ app_owner }}"
+        group: "{{ app_owner }}"
+      loop:
+        - config
+        - logs
+        - data
+
+    - name: Deploy app config
+      ansible.builtin.template:
+        src: app.conf.j2
+        dest: "{{ app_root }}/config/app.conf"
+        owner: "{{ app_owner }}"
+        group: "{{ app_owner }}"
+      notify: write audit log
+
+  rescue:
+    - name: Write failure marker
+      ansible.builtin.copy:
+        dest: /tmp/app-layout-failed.txt
+        content: "App layout failed on {{ inventory_hostname }}"

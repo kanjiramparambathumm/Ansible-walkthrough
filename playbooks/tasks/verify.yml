@@ -1,0 +1,8 @@
+---
+- name: Verify setup marker
+  ansible.builtin.command: cat /tmp/include-demo/setup.txt
+  register: include_verify
+
+- name: Show verification output
+  ansible.builtin.debug:
+    var: include_verify.stdout

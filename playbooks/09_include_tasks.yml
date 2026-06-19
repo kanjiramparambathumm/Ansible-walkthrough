@@ -1,0 +1,10 @@
+---
+- name: Include tasks demo
+  hosts: all
+  become: true
+  tasks:
+    - name: Include setup tasks
+      ansible.builtin.include_tasks: tasks/setup.yml
+
+    - name: Include verify tasks
+      ansible.builtin.include_tasks: tasks/verify.yml

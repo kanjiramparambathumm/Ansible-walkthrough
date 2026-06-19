@@ -1,0 +1,25 @@
+---
+- name: Basic playbook
+  hosts: all
+  become: true
+  tasks:
+    - name: Create training directory
+      ansible.builtin.file:
+        path: /opt/ansible-training
+        state: directory
+        mode: '0755'
+
+    - name: Create welcome file
+      ansible.builtin.copy:
+        dest: /opt/ansible-training/welcome.txt
+        content: |
+          Welcome to Ansible training
+          Host: {{ inventory_hostname }}
+
+    - name: Read welcome file
+      ansible.builtin.command: cat /opt/ansible-training/welcome.txt
+      register: welcome
+
+    - name: Show file content
+      ansible.builtin.debug:
+        var: welcome.stdout

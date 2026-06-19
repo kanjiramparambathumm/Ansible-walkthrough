@@ -1,0 +1,17 @@
+---
+- name: Template and handler demo
+  hosts: all
+  become: true
+  tasks:
+    - name: Deploy MOTD from template
+      ansible.builtin.template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        mode: '0644'
+      notify: log motd change
+
+  handlers:
+    - name: log motd change
+      ansible.builtin.copy:
+        dest: /tmp/motd-change.log
+        content: "MOTD updated on {{ inventory_hostname }} at {{ ansible_date_time.iso8601 }}\n"

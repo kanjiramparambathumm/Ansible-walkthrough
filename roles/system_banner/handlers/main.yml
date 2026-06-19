@@ -1,0 +1,6 @@
+---
+- name: record banner change
+  ansible.builtin.lineinfile:
+    path: /tmp/banner-changes.log
+    line: "Banner updated on {{ inventory_hostname }}"
+    create: true

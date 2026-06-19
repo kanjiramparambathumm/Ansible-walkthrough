@@ -1,0 +1,36 @@
+---
+- name: Variables and loops demo
+  hosts: all
+  become: true
+  vars:
+    app_root: /opt/demo-app
+    app_files:
+      - name: config.ini
+        content: |
+          app_name=demo
+          env=lab
+      - name: banner.txt
+        content: |
+          Managed by Ansible on {{ inventory_hostname }}
+      - name: status.txt
+        content: "created=true"
+  tasks:
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ app_root }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create app files from loop
+      ansible.builtin.copy:
+        dest: "{{ app_root }}/{{ item.name }}"
+        content: "{{ item.content }}"
+      loop: "{{ app_files }}"
+
+    - name: List created files
+      ansible.builtin.command: "ls -1 {{ app_root }}"
+      register: app_ls
+
+    - name: Show file list
+      ansible.builtin.debug:
+        var: app_ls.stdout_lines

@@ -1,0 +1,6 @@
+---
+- name: write audit log
+  ansible.builtin.lineinfile:
+    path: /tmp/app-layout-audit.log
+    line: "Config updated on {{ inventory_hostname }}"
+    create: true

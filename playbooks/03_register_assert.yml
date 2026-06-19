@@ -1,0 +1,21 @@
+---
+- name: Register and assert demo
+  hosts: all
+  tasks:
+    - name: Get hostname
+      ansible.builtin.command: hostname
+      register: host_cmd
+
+    - name: Get uptime
+      ansible.builtin.command: uptime -p
+      register: uptime_cmd
+
+    - name: Show summary
+      ansible.builtin.debug:
+        msg: "Host={{ host_cmd.stdout }} | Uptime={{ uptime_cmd.stdout }}"
+
+    - name: Ensure hostname is not empty
+      ansible.builtin.assert:
+        that:
+          - host_cmd.stdout | length > 0
+        fail_msg: "hostname command returned empty output"
