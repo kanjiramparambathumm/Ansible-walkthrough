@@ -245,16 +245,33 @@ ssh-keygen -f ~/.ssh/known_hosts -R '[127.0.0.1]:2222'
 
 ```ini
 [nodegroup]
-node1 ansible_host=127.0.0.1 ansible_user=ansible ansible_password=ansible ansible_port=2221 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-node2 ansible_host=127.0.0.1 ansible_user=ansible ansible_password=ansible ansible_port=2222 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+node1 ansible_host=127.0.0.1 ansible_port=2221
+node2 ansible_host=127.0.0.1 ansible_port=2222
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
 ```
 
-The `ansible_password` values above are used for SSH login. They are not the same as sudo prompts, because the lab containers are configured for passwordless sudo.
+Note: SSH user and password are defined in `group_vars/all.yml` (below), not here, so they're centralized and not repeated per host.
 
-### 6.2 Create `ansible.cfg`
+### 6.2 Create `group_vars/all.yml`
+
+Create a `group_vars` directory if it doesn't exist:
+
+```bash
+mkdir -p group_vars
+```
+
+Create `group_vars/all.yml` with centralized credentials:
+
+```yaml
+ansible_user: ansible
+ansible_password: ansible
+```
+
+This file applies the SSH user and password to all hosts in the inventory without repeating them per host.
+
+### 6.3 Create `ansible.cfg`
 
 ```ini
 [defaults]
@@ -271,11 +288,42 @@ become_method = sudo
 become_ask_pass = False
 ```
 
-This configuration assumes the container image grants the `ansible` user passwordless sudo. SSH access remains password-based through the inventory credentials above.
+This configuration centralizes Ansible behavior. SSH credentials come from `group_vars/all.yml`, so they're clean and persistent across the project.
 
 ---
 
-## 7. Validate the Docker-based lab
+## 7. Verify the project structure
+
+Your `ansible-workshop-docker` folder should now contain:
+
+```text
+ansible-workshop-docker/
+├── Dockerfile
+├── docker-compose.yml
+├── inventory.ini
+├── ansible.cfg
+├── group_vars/
+│   └── all.yml
+├── ssh-keys/
+│   ├── node1/
+│   │   ├── ssh_host_ed25519_key
+│   │   ├── ssh_host_ed25519_key.pub
+│   │   ├── ssh_host_rsa_key
+│   │   └── ssh_host_rsa_key.pub
+│   └── node2/
+│       ├── ssh_host_ed25519_key
+│       ├── ssh_host_ed25519_key.pub
+│       ├── ssh_host_rsa_key
+│       └── ssh_host_rsa_key.pub
+├── playbooks/
+├── templates/
+├── group_vars/
+└── host_vars/
+```
+
+---
+
+## 8. Validate the Docker-based lab
 
 Run:
 
@@ -300,7 +348,7 @@ ansible-inventory -i inventory.ini --graph
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 | Problem | What it usually means | Fix |
 |---|---|---|
@@ -323,7 +371,7 @@ ansible all -m ping -i inventory.ini -vvv
 
 ---
 
-## 9. Final lab state checklist
+## 10. Final lab state checklist
 
 - WSL2 is enabled and Ubuntu 24.04/22.04 is installed
 - Docker Desktop is installed on Windows with WSL2 backend and Ubuntu integration enabled
